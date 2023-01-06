@@ -12,4 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 605bfaf1a1178b3aeb30b520bdbfddbd, type: 3}
   m_Name: PlayerSettings
   m_EditorClassIdentifier: 
-  speed: 1
+  max_speed: 1
+  time_to_max_speed: 4
+  time_to_rest: 10
+  max_revs: 2
+  pitch_time: 5
+  yaw_time: 5
+  roll_time: 5
