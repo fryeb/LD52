@@ -82,5 +82,12 @@ public class PlayerController : MonoBehaviour
 	    float revs_per_second = settings.max_revs * speed/settings.max_speed;
 	    float delta_degrees = revs_per_second * Time.fixedDeltaTime * 360;
 	    engines.Rotate(new Vector3(delta_degrees, 0, 0));
+
+	    
+	    // Check for tractor target
+	    Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+	    RaycastHit hit;
+	    bool did_hit = Physics.Raycast(ray, out hit);
+	    UIController.instance.SetReticleEnabled(did_hit);
     }
 }
