@@ -10,14 +10,15 @@ public class PlayerController : MonoBehaviour
     public Transform engines;
 
     private bool accelerating = false;
-    private Vector3 velocity = Vector3.zero;
+    private float speed = 0.0f;
+    private AsteroidController asteroid;
+    private AsteroidController targetedAsteroid;
 
     private Rigidbody m_Rigidbody;
     private Light[] m_Lights;
     private LineRenderer m_LineRenderer;
     private float[] m_LightIntensities;
     private ParticleSystem[] m_Particles;
-    private AsteroidController asteroid;
 
     void Start()
     {
@@ -52,20 +53,24 @@ public class PlayerController : MonoBehaviour
 		    Vector3[] points = new Vector3[0];
 		    m_LineRenderer.SetPositions(points);
 	    }
+
+	    if (asteroid && Input.GetKeyDown(KeyCode.R)) {
+		    asteroid = null;
+	    }
+
+	    if (targetedAsteroid && Input.GetKeyDown(KeyCode.R)) {
+		    asteroid = targetedAsteroid;
+	    }
     }
 
     void FixedUpdate()
     {
 	    // Speed
-	    if (Input.GetKey(KeyCode.Space)) {
-		    accelerating = true;
-		    velocity += transform.forward * settings.GetAcceleration() * Time.fixedDeltaTime;
-	    } else {
-		    accelerating = false;
-		    velocity -= Vector3.Normalize(velocity) * settings.GetDeceleration() * Time.fixedDeltaTime;
-	    }
-
-	    m_Rigidbody.MovePosition(transform.position + velocity * Time.fixedDeltaTime);
+	    accelerating = Input.GetKey(KeyCode.Space);
+	    float acceleration = accelerating ? settings.GetAcceleration() : settings.GetDeceleration();
+	    speed = speed + acceleration * Time.fixedDeltaTime;
+	    speed = Mathf.Clamp(speed, 0, settings.max_speed);
+	    m_Rigidbody.MovePosition(transform.position + transform.forward * speed * Time.fixedDeltaTime);
 
 	    // Direction
 	    Vector3 euler = new Vector3(0, 0, 0);
@@ -91,35 +96,49 @@ public class PlayerController : MonoBehaviour
 
 
 	    // Rotate Engines
-	    float revs_per_second = settings.max_revs * velocity.magnitude/settings.max_speed;
+	    float revs_per_second = settings.max_revs * (speed/settings.max_speed);
 	    float delta_degrees = revs_per_second * Time.fixedDeltaTime * 360;
 	    engines.Rotate(new Vector3(delta_degrees, 0, 0));
 
 	    
 	    // Check for tractor target
-	    if (Input.GetKeyDown(KeyCode.R)) {
-		    asteroid = null;
-	    }
-
 	    Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
 	    RaycastHit hit;
 	    bool did_hit = Physics.Raycast(ray, out hit);
+	    targetedAsteroid = null;
 	    if (did_hit) {
 		    AsteroidController hitAsteroid = hit.collider.GetComponent<AsteroidController>();
 		    // TODO: Tell user that if the object isn't tractable
 		    // TODO: Tell user that they can't pull more than one asteroid at a time (or enable multiple asteroids at a time?)
 		    // TODO: Tell user to hold R to use tractor beam
-		    UIController.instance.SetReticleEnabled(did_hit);
-		    if (hitAsteroid && Input.GetKeyDown(KeyCode.R) && !asteroid) {
-			    asteroid = hitAsteroid;
+		    UIController.instance.SetReticleEnabled(hitAsteroid && !asteroid);
+		    if (hitAsteroid && !asteroid) {
+			    targetedAsteroid = hitAsteroid;
 		    }
 	    } else {
-		    UIController.instance.SetReticleEnabled(false); }
+		    UIController.instance.SetReticleEnabled(false); 
+	    }
 
-	    // Pull Asteroid towards self
-	    if (asteroid) {
-		    Vector3 offset = transform.position - asteroid.transform.position;
-		    asteroid.GetComponent<Rigidbody>().AddForce(Vector3.Normalize(offset) * settings.tractorBeamForce);
+	    if (asteroid)
+	    {
+		    Vector3 asteroidOffset = (transform.position - asteroid.transform.position);
+		    Vector3 asteroidDirection = asteroidOffset.normalized;
+		    float asteroidDistance = asteroidOffset.magnitude;
+		    float forceMagnitude = 0.0f;
+		    if (asteroidDistance < settings.tractorBeemForceField)
+			    forceMagnitude = -settings.tractorBeemPush;
+		    else if (asteroidDistance > settings.tractorBeemMinRange)
+			    forceMagnitude = settings.tractorBeemPull;
+
+		    Rigidbody asteroidRigidbody = asteroid.GetComponent<Rigidbody>();
+		    Vector3 asteroidVelocity = asteroidRigidbody.velocity;
+
+		    Vector3 offsetParallelVelocity = Vector3.Dot(asteroidDirection, asteroidVelocity) * asteroidDirection;
+		    Vector3 offsetPerpendicularVelocity = asteroidVelocity - offsetParallelVelocity;
+
+		    Vector3 force =  asteroidOffset.normalized* forceMagnitude - offsetPerpendicularVelocity * settings.tractorBeemDrag;
+		    asteroidRigidbody.AddForce(force);
+		    asteroid.GetComponent<Rigidbody>().AddForce(force);
 	    }
     }
 }
