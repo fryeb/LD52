@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     private Light[] m_Lights;
     private float[] m_LightIntensities;
     private ParticleSystem[] m_Particles;
+    private AsteroidController asteroid;
 
     void Start()
     {
@@ -85,9 +86,31 @@ public class PlayerController : MonoBehaviour
 
 	    
 	    // Check for tractor target
+	    // TODO: Ignore self
+	    if (!Input.GetKey(KeyCode.R)) {
+		    asteroid = null;
+	    }
+
 	    Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
 	    RaycastHit hit;
 	    bool did_hit = Physics.Raycast(ray, out hit);
-	    UIController.instance.SetReticleEnabled(did_hit);
+	    if (did_hit) {
+		    AsteroidController hitAsteroid = hit.collider.GetComponent<AsteroidController>();
+		    // TODO: Tell user that if the object isn't tractable
+		    // TODO: Tell user that they can't pull more than one asteroid at a time (or enable multiple asteroids at a time?)
+		    // TODO: Tell user to hold R to use tractor beam
+		    UIController.instance.SetReticleEnabled(did_hit);
+		    if (hitAsteroid && Input.GetKey(KeyCode.R) && !asteroid) {
+			    asteroid = hitAsteroid;
+		    }
+	    } else {
+		    UIController.instance.SetReticleEnabled(false);
+	    }
+
+	    // Pull Asteroid towards self
+	    if (asteroid) {
+		    Vector3 offset = transform.position - asteroid.transform.position;
+		    asteroid.GetComponent<Rigidbody>().AddForce(Vector3.Normalize(offset) * settings.tractorBeamForce);
+	    }
     }
 }

@@ -20,6 +20,8 @@ public class PlayerSettings : ScriptableObject
 	[Range(0.01f, 10.0f)]
 	public float roll_time = 1.0f;
 
+	public float tractorBeamForce = 1.0f;
+
 	// Visual Settings
 	[Range(1.0f, 10.0f)]
 	public float max_revs =  10.0f;
