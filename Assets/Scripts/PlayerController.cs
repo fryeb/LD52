@@ -8,21 +8,46 @@ public class PlayerController : MonoBehaviour
     public PlayerSettings settings;
     public Transform engines;
 
+    private bool accelerating = false;
     private float speed = 0.0f;
 
     private Rigidbody m_Rigidbody;
+    private Light[] m_Lights;
+    private float[] m_LightIntensities;
+    private ParticleSystem[] m_Particles;
 
     void Start()
     {
 	    m_Rigidbody = GetComponent<Rigidbody>();
+	    m_Lights = engines.GetComponentsInChildren<Light>();
+	    m_LightIntensities = new float[m_Lights.Length];
+	    for (int i = 0; i < m_Lights.Length; i++) {
+		    m_LightIntensities[i] = m_Lights[i].intensity;
+	    }
+	    m_Particles = engines.GetComponentsInChildren<ParticleSystem>();
+    }
+
+    void Update() 
+    {
+	    float intensityScale = accelerating ? 1.0f : 0.0f;
+	    float t = Time.deltaTime / settings.engine_cooldown;
+	    for (int i = 0; i < m_Lights.Length; i++) {
+		    float intensity = m_LightIntensities[i] * intensityScale;
+		    m_Lights[i].intensity = Mathf.Lerp(m_Lights[i].intensity, intensity, t);
+	    }
+	    for (int i = 0; i < m_Particles.Length; i++) {
+		    m_Particles[i].enableEmission = accelerating;
+	    }
     }
 
     void FixedUpdate()
     {
 	    // Speed
 	    if (Input.GetKey(KeyCode.Space)) {
+		    accelerating = true;
 		    speed += settings.GetAcceleration() * Time.fixedDeltaTime;
 	    } else {
+		    accelerating = false;
 		    speed -= settings.GetDeceleration() * Time.fixedDeltaTime;
 	    }
 	    speed = Mathf.Clamp(speed, 0, settings.max_speed);

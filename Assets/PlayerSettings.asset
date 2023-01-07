@@ -15,7 +15,8 @@ MonoBehaviour:
   max_speed: 1
   time_to_max_speed: 4
   time_to_rest: 10
-  max_revs: 2
   pitch_time: 5
   yaw_time: 5
   roll_time: 5
+  max_revs: 2
+  engine_cooldown: 0.25
