@@ -12,12 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 605bfaf1a1178b3aeb30b520bdbfddbd, type: 3}
   m_Name: PlayerSettings
   m_EditorClassIdentifier: 
-  max_speed: 1
-  time_to_max_speed: 4
+  max_speed: 40
+  time_to_max_speed: 10
   time_to_rest: 2
   pitch_time: 5
   yaw_time: 5
   roll_time: 5
-  tractorBeamForce: 10
   max_revs: 2
   engine_cooldown: 0.25
+  tractorBeemForceField: 10
+  tractorBeemMinRange: 12
+  tractorBeemMaxRange: 100
+  tractorBeemPull: 10
+  tractorBeemPush: 20
+  tractorBeemDrag: 1
