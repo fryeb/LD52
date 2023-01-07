@@ -3,16 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(LineRenderer))]
 public class PlayerController : MonoBehaviour
 {
     public PlayerSettings settings;
     public Transform engines;
 
     private bool accelerating = false;
-    private float speed = 0.0f;
+    private Vector3 velocity = Vector3.zero;
 
     private Rigidbody m_Rigidbody;
     private Light[] m_Lights;
+    private LineRenderer m_LineRenderer;
     private float[] m_LightIntensities;
     private ParticleSystem[] m_Particles;
     private AsteroidController asteroid;
@@ -26,6 +28,7 @@ public class PlayerController : MonoBehaviour
 		    m_LightIntensities[i] = m_Lights[i].intensity;
 	    }
 	    m_Particles = engines.GetComponentsInChildren<ParticleSystem>();
+	    m_LineRenderer = GetComponent<LineRenderer>();
     }
 
     void Update() 
@@ -39,6 +42,16 @@ public class PlayerController : MonoBehaviour
 	    for (int i = 0; i < m_Particles.Length; i++) {
 		    m_Particles[i].enableEmission = accelerating;
 	    }
+
+	    if (asteroid) {
+		    Vector3[] points = new Vector3[2];
+		    points[0] = transform.position;
+		    points[1] = asteroid.transform.position;
+		    m_LineRenderer.SetPositions(points);
+	    } else {
+		    Vector3[] points = new Vector3[0];
+		    m_LineRenderer.SetPositions(points);
+	    }
     }
 
     void FixedUpdate()
@@ -46,21 +59,19 @@ public class PlayerController : MonoBehaviour
 	    // Speed
 	    if (Input.GetKey(KeyCode.Space)) {
 		    accelerating = true;
-		    speed += settings.GetAcceleration() * Time.fixedDeltaTime;
+		    velocity += transform.forward * settings.GetAcceleration() * Time.fixedDeltaTime;
 	    } else {
 		    accelerating = false;
-		    speed -= settings.GetDeceleration() * Time.fixedDeltaTime;
+		    velocity -= Vector3.Normalize(velocity) * settings.GetDeceleration() * Time.fixedDeltaTime;
 	    }
-	    speed = Mathf.Clamp(speed, 0, settings.max_speed);
 
-	    m_Rigidbody.MovePosition(transform.position + transform.forward * speed);
+	    m_Rigidbody.MovePosition(transform.position + velocity * Time.fixedDeltaTime);
 
 	    // Direction
 	    Vector3 euler = new Vector3(0, 0, 0);
 	    if (Input.GetKey(KeyCode.W)) {
 		    euler.x -= 360.0f / settings.pitch_time;
-	    }
-	    if (Input.GetKey(KeyCode.A)) {
+	    } if (Input.GetKey(KeyCode.A)) {
 		    euler.y -= 360.0f / settings.yaw_time;
 	    }
 	    if (Input.GetKey(KeyCode.S)) {
@@ -80,14 +91,13 @@ public class PlayerController : MonoBehaviour
 
 
 	    // Rotate Engines
-	    float revs_per_second = settings.max_revs * speed/settings.max_speed;
+	    float revs_per_second = settings.max_revs * velocity.magnitude/settings.max_speed;
 	    float delta_degrees = revs_per_second * Time.fixedDeltaTime * 360;
 	    engines.Rotate(new Vector3(delta_degrees, 0, 0));
 
 	    
 	    // Check for tractor target
-	    // TODO: Ignore self
-	    if (!Input.GetKey(KeyCode.R)) {
+	    if (Input.GetKeyDown(KeyCode.R)) {
 		    asteroid = null;
 	    }
 
@@ -100,12 +110,11 @@ public class PlayerController : MonoBehaviour
 		    // TODO: Tell user that they can't pull more than one asteroid at a time (or enable multiple asteroids at a time?)
 		    // TODO: Tell user to hold R to use tractor beam
 		    UIController.instance.SetReticleEnabled(did_hit);
-		    if (hitAsteroid && Input.GetKey(KeyCode.R) && !asteroid) {
+		    if (hitAsteroid && Input.GetKeyDown(KeyCode.R) && !asteroid) {
 			    asteroid = hitAsteroid;
 		    }
 	    } else {
-		    UIController.instance.SetReticleEnabled(false);
-	    }
+		    UIController.instance.SetReticleEnabled(false); }
 
 	    // Pull Asteroid towards self
 	    if (asteroid) {

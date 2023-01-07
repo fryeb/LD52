@@ -18,5 +18,6 @@ MonoBehaviour:
   pitch_time: 5
   yaw_time: 5
   roll_time: 5
+  tractorBeamForce: 10
   max_revs: 2
   engine_cooldown: 0.25
